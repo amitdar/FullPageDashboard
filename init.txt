@@ -1,1 +1,1 @@
-https://github.com/amitdar/FullPageDashboard
+http://github.com/amitdar/FullPageDashboard
