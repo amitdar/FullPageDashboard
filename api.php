@@ -27,6 +27,9 @@ class Api {
             case 'speed':
                 $this->updateSpeed();
                 break;
+             case 'hideTabBar':
+                $this->hideTabBar();
+                break;
         }
     }
     
@@ -96,6 +99,12 @@ class Api {
     private function updateSpeed() {
         $this->read();
         $this->options['speed'] = (int) $_POST['value'];
+        $this->store();
+    }
+
+    private function hideTabBar() {
+        $this->read();
+        $this->options['hideTabBar'] = (int) $_POST['value'];
         $this->store();
     }
     
