@@ -5,11 +5,12 @@
     $options = $api->getOptions();
     
     $seconds = (isset($options['speed'])) ? $options['speed'] : DEFAULT_ROTATE_SPEED;   
-    
+    $hideTabBar = (isset($options['hideTabBar'])) ? $options['hideTabBar'] : false;
+
     $id = isset($_GET['id']) ? (int) $_GET['id'] : 1;
     
     if ($id > count($urls)) {
-    	$id = 1;
+        $id = 1;
     }
 ?>
 <!DOCTYPE html>
@@ -44,67 +45,124 @@
     
     <script type="text/javascript">
     var rotateTime = <?php echo $seconds; ?>;
-	var counter = rotateTime;
-	var timer = null;
-	
+    var counter = rotateTime;
+    var timer = null;
+    var hideTabBarAfterSeconds = 5;
+    var autoHideTabBar = <?php echo json_encode($hideTabBar); ?>;
+
     function resize() {
-    	$('.tab-content').css('height', $(window).height() - $('.nav-tabs').height() - 5);
+        var tabBarHeight = 0;
+        if (!autoHideTabBar){
+            tabBarHeight = $('.nav-tabs').height();
+        }
+
+        $('.tab-content').css('height', $(window).height() - tabBarHeight - 5);
     }
 
-   	function nextTab() {
-   	   	var next = $('.nav-tabs li.active').next('li');
-   	   	if (next.text() == '+') {
-   	   	   	$($('.nav-tabs li')[2]).find('a').click();
-   	   	} else {
-   	   	   	$('.nav-tabs li.active').next('li').find('a').click();
-   	   	}
-      	document.title = 'Full Page Dashboard - ' + $('.nav-tabs li.active a').text();
-   	}
+    function nextTab() {
+        var next = $('.nav-tabs li.active').next('li');
+        if (next.text() == '+') {
+            $($('.nav-tabs li')[3]).find('a').click();
+        } else {
+            $('.nav-tabs li.active').next('li').find('a').click();
+            reloadAll();
+        }
+        document.title = 'Full Page Dashboard - ' + $('.nav-tabs li.active a').text();
+    }
+
+    function reloadAll()
+    {
+        <?php foreach ($urls as $key => $url) : ?>
+            document.getElementById("frame-<?php echo $key; ?>").src = document.getElementById("frame-<?php echo $key; ?>").src;
+        <?php endforeach; ?>
+    }
 
     function play() {
         timer = setInterval(function() { tick(); }, 1000);
         $('#pause-btn').removeClass('hidden');
-    	$('#play-btn').addClass('hidden');
+        $('#play-btn').addClass('hidden');
     }
 
     function stop() {
-    	clearInterval(timer);
-    	$('#pause-btn').addClass('hidden');
-    	$('#play-btn').removeClass('hidden');
+        clearInterval(timer);
+        $('#pause-btn').addClass('hidden');
+        $('#play-btn').removeClass('hidden');
+    }
+
+    function hideTabBarEnabled() {
+        $.ajax({
+                type: "POST",
+                url: 'api.php',
+                data: {'action': 'hideTabBar', 'value': true},
+                success: function(data, textStatus, jqXHR) {
+                    autoHideTabBar = !0;
+                    toggleAutoHidePushPin(autoHideTabBar);
+                }
+            });
+    }
+
+    function hideTabBarDisabled() {
+        $.ajax({
+                type: "POST",
+                url: 'api.php',
+                data: {'action': 'hideTabBar', 'value': false},
+                success: function(data, textStatus, jqXHR) {
+                    autoHideTabBar = !1;
+                    toggleAutoHidePushPin(autoHideTabBar);
+                }
+            });
+    }
+
+    function toggleAutoHidePushPin(enabled)
+    {
+        if(enabled)
+        {
+            $('#hideTabBarEnabled-btn').addClass('hidden');
+            $('#hideTabBarDisabled-btn').removeClass('hidden');
+        }
+        else
+        {
+            $('#hideTabBarDisabled-btn').addClass('hidden');
+            $('#hideTabBarEnabled-btn').removeClass('hidden');
+        }
     }
 
     function initKnob(maxValue) {
-    	$("#counter").knob({
-        	width: 20,
-        	height: 20,
-        	displayInput: false,
-        	min: 0,
-        	max: maxValue,
-        	readOnly: true
-    	});
+        $("#counter").knob({
+            width: 20,
+            height: 20,
+            displayInput: false,
+            min: 0,
+            max: maxValue,
+            readOnly: true
+        });
     }
     
     $(document).ready(function() {
-    	<?php if (count($urls) > 1) : ?>
-    	initKnob(rotateTime);
-        play();
-        document.title = 'Full Page Dashboard - ' + $('.nav-tabs li.active a').text();
+        <?php if (count($urls) > 1) : ?>
+            initKnob(rotateTime);
+            play();
+            document.title = 'Full Page Dashboard - ' + $('.nav-tabs li.active a').text();
         <?php endif; ?>
-    	resize();
+        resize();
+        if (autoHideTabBar){
+            $('.nav-tabs').hide();
+        }
+        toggleAutoHidePushPin(autoHideTabBar);
     });
 
     function tick() {
-		$('#counter').val(counter).trigger('change');
-    	counter--;
-    	if (counter < 0) {
-        	counter = rotateTime;
-        	nextTab();
-    	}
+        $('#counter').val(counter).trigger('change');
+        counter--;
+        if (counter < 0) {
+            counter = rotateTime;
+            nextTab();
+        }
     }
 
     $(window).resize(function() {
-		resize();
-	});
+        resize();
+    });
 
     function deleteUrl() {
         var title = $('.nav-tabs li.active a').text();
@@ -112,14 +170,14 @@
 
         var r = confirm('Are you sure you would to delete "' + title + '"');
         if (r == true) {
-        	$.ajax({
-    		  	type: "POST",
-    		  	url: 'api.php',
-    		  	data: {'action': 'delete', 'title': title, 'id': id},
-    		  	success: function(data, textStatus, jqXHR) {
-    		  		window.location.reload()
-    		    }
-    		});
+            $.ajax({
+                type: "POST",
+                url: 'api.php',
+                data: {'action': 'delete', 'title': title, 'id': id},
+                success: function(data, textStatus, jqXHR) {
+                    window.location.reload()
+                }
+            });
         }
     }
 
@@ -129,44 +187,68 @@
     }
     
     function changeCounter() {
-    	var newCounter = prompt("Select rotate time", rotateTime);
-    	if (newCounter != null && isNormalInteger(newCounter)) {
-    		newCounter = parseInt(newCounter);
-    		$.ajax({
-    		  	type: "POST",
-    		  	url: 'api.php',
-    		  	data: {'action': 'speed', 'value': newCounter},
-    		  	success: function(data, textStatus, jqXHR) {
-    		  		rotateTime = newCounter;
-    		  		$('#counter').trigger('configure', {
-    		  		    	"max": rotateTime,
-					});
-    		  		counter = 0;
-    		    }
-    		});
-    	}
+        var newCounter = prompt("Select rotate time", rotateTime);
+        if (newCounter != null && isNormalInteger(newCounter)) {
+            newCounter = parseInt(newCounter);
+            $.ajax({
+                type: "POST",
+                url: 'api.php',
+                data: {'action': 'speed', 'value': newCounter},
+                success: function(data, textStatus, jqXHR) {
+                    rotateTime = newCounter;
+                    $('#counter').trigger('configure', {
+                            "max": rotateTime,
+                    });
+                    counter = 0;
+                }
+            });
+        }
     }
     
-	function addUrl() {
-		var title = $('#add-title').val();
-		var url = $('#add-url').val();
+    function addUrl() {
+        var title = $('#add-title').val();
+        var url = $('#add-url').val();
 
-		if (title == '' || url == '') {
-			alert('Title and URL cannot be empty');
-		}
+        if (title == '' || url == '') {
+            alert('Title and URL cannot be empty');
+        }
 
-		$.ajax({
-		  	type: "POST",
-		  	url: 'api.php',
-		  	data: {'action': 'add', 'title': title, 'url': url},
-		  	success: function(data, textStatus, jqXHR) {
-		  		window.location.reload()
-		    }
-		});
-	}
-	</script>
+        $.ajax({
+            type: "POST",
+            url: 'api.php',
+            data: {'action': 'add', 'title': title, 'url': url},
+            success: function(data, textStatus, jqXHR) {
+                window.location.reload()
+            }
+        });
+    }
+
+    function showTabBarOnMouseMove()
+    {
+      $('#mouse-trap').mousemove(function(event){
+         $('.nav-tabs').show();
+         setTimeout(function() {
+            if (autoHideTabBar) {
+                $('.nav-tabs').hide();
+                resize();
+            }
+         }, hideTabBarAfterSeconds * 1000 );
+      });
+    }
+
+    </script>
   </head>
   <body>
+    <div id="mouse-trap" style="position: absolute; top: 0px; left: 0px; height:100px; width:100%;"></div>
+    <script>
+        showTabBarOnMouseMove();
+        resize();
+        if (autoHideTabBar){
+            $('.nav-tabs').hide();
+            resize();
+        }
+        toggleAutoHidePushPin(autoHideTabBar);
+    </script>
     <div>
 
       <!-- Nav tabs -->
@@ -183,10 +265,16 @@
                 <span id="play-btn" onclick="play()" class="glyphicon glyphicon-play hidden"></span>
             </a>
         </li>
+         <li>
+            <a href="javascript:void(0)">
+                <span id="hideTabBarEnabled-btn" onclick="hideTabBarEnabled()" class="glyphicon glyphicon-pushpin"></span>
+                <span id="hideTabBarDisabled-btn" onclick="hideTabBarDisabled()" class="glyphicon glyphicon-pushpin hidden" style="transform: rotate(45deg);"></span>
+            </a>
+        </li>
         <?php endif; ?>
         <?php foreach ($urls as $key => $url) : ?>
         <li role="presentation" <?php echo ($key == 0) ? 'class="active"' : ''; ?>><a href="#url<?php echo $key;?>" aria-controls="url<?php echo $key;?>" role="tab" data-toggle="tab"><?php echo $url['title']; ?></a></li>
-    	<?php endforeach; ?>
+        <?php endforeach; ?>
         <li role="presentation"><a href="javascript:void(0)" data-toggle="modal" data-target="#addModal" aria-controls="add" role="tab" data-toggle="tab">+</a></li>
         <?php if (count($urls) > 1) : ?>
         <li role="presentation" class="pull-right" style="margin-top: 2px;"><a href="javascript:void(0)" onclick="deleteUrl()">
@@ -200,8 +288,8 @@
         <?php foreach ($urls as $key => $url) : ?>
         <div role="tabpanel" class="tab-pane <?php echo ($key == 0) ? 'active' : ''; ?>" id="url<?php echo $key; ?>">
             <iframe src="<?php echo $url['url']; ?>" id="frame-<?php echo $key; ?>" style="width:100%; height:100%; border:none; margin:0; padding:0; overflow:hidden;z-index: 0;">
-        		Your browser doesn't support iframes
-        	</iframe>
+                Your browser doesn't support iframes
+            </iframe>
         </div>
         <?php endforeach; ?>
       </div>
