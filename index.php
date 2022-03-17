@@ -265,17 +265,17 @@
                 <span id="play-btn" onclick="play()" class="glyphicon glyphicon-play hidden"></span>
             </a>
         </li>
-         <li>
+        <?php endif; ?>
+		<li>
             <a href="javascript:void(0)">
-                <span id="hideTabBarEnabled-btn" onclick="hideTabBarEnabled()" class="glyphicon glyphicon-pushpin"></span>
-                <span id="hideTabBarDisabled-btn" onclick="hideTabBarDisabled()" class="glyphicon glyphicon-pushpin hidden" style="transform: rotate(45deg);"></span>
+                <span id="hideTabBarEnabled-btn" onclick="hideTabBarEnabled()" class="glyphicon glyphicon-pushpin" title="Auto-hide bar"></span>
+                <span id="hideTabBarDisabled-btn" onclick="hideTabBarDisabled()" class="glyphicon glyphicon-pushpin hidden" title="Pin topbar" style="transform: rotate(45deg);"></span>
             </a>
         </li>
-        <?php endif; ?>
         <?php foreach ($urls as $key => $url) : ?>
         <li role="presentation" <?php echo ($key == 0) ? 'class="active"' : ''; ?>><a href="#url<?php echo $key;?>" aria-controls="url<?php echo $key;?>" role="tab" data-toggle="tab"><?php echo $url['title']; ?></a></li>
         <?php endforeach; ?>
-        <li role="presentation"><a href="javascript:void(0)" data-toggle="modal" data-target="#addModal" aria-controls="add" role="tab" data-toggle="tab">+</a></li>
+        <li role="presentation"><a href="javascript:void(0)" data-toggle="modal" data-target="#addModal" aria-controls="add" role="tab" data-toggle="tab" title="Add new page">+</a></li>
         <?php if (count($urls) > 1) : ?>
         <li role="presentation" class="pull-right" style="margin-top: 2px;"><a href="javascript:void(0)" onclick="deleteUrl()">
         <span id="play-btn" class="glyphicon glyphicon-trash"></span>
