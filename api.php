@@ -104,7 +104,7 @@ class Api {
 
     private function hideTabBar() {
         $this->read();
-        $this->options['hideTabBar'] = (int) $_POST['value'];
+        $this->options['hideTabBar'] = $_POST['value'] == 'true' ? 1 : 0;
         $this->store();
     }
     
