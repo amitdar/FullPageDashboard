@@ -1,0 +1,9 @@
+name: PHP tests
+on: [push, pull_request]
+jobs:
+  state:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: php -l api.php
+      - run: php tests/state.php
